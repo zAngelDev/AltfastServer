@@ -30,10 +30,19 @@ const UserSchema = new Schema(
       default: ["USER"],
       required: true,
     },
+    verificated: {
+      type: Boolean,
+      default: false,
+      required: true,
+    },
     plan: {
       type: String,
       default: "BASIC",
       required: true,
+    },
+    files: {
+      type: Array,
+      default: [],
     },
   },
   {
