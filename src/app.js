@@ -6,6 +6,7 @@ import "./handlers/auth";
 import authRoute from "./routes/auth";
 import usersRoute from "./routes/users";
 import filesRoute from "./routes/files";
+import adminRoute from "./routes/admin";
 
 const app = express();
 
@@ -29,5 +30,7 @@ app.use("/auth", authRoute);
 app.use("/users", usersRoute);
 
 app.use("/files", filesRoute);
+
+app.use("/admin", adminRoute);
 
 export default app;

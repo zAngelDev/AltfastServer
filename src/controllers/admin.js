@@ -1,21 +1,15 @@
 import Folder from "../models/Folder";
 import File from "../models/File";
+import User from "../models/User";
+import Payment from "../models/Payment";
+import Report from "../models/Report";
 
-export const getUserAvatar = async () => {};
-
-export const getStats = async (req, res) => {
-  const user = req.user;
+export const getStats = async (_, res) => {
   try {
-    const files = await Promise.all(
-      user.files
-        .map(async (folderOrFileUUID) => {
-          const folderOrFile =
-            (await Folder.findOne({ uuid: folderOrFileUUID })) ||
-            (await File.findOne({ uuid: folderOrFileUUID }));
-          return folderOrFile;
-        })
-        .filter((file) => file)
-    );
+    const files = (await Folder.find()).concat(await File.find());
+    const users = await User.find();
+    const payments = await Payment.find();
+    const reports = await Report.find();
     const todayVisits = files
       .filter((file) => file.createdAt >= new Date() - 24 * 60 * 60 * 1000)
       .reduce(
@@ -100,6 +94,90 @@ export const getStats = async (req, res) => {
             previousValue + currentValue.visits.length,
           0
         );
+    const todayUsers = users.filter(
+      (user) => user.createdAt >= new Date() - 24 * 60 * 60 * 1000
+    ).length;
+    const todayUsersGrowing =
+      todayUsers >=
+      users.filter(
+        (user) =>
+          user.createdAt >= new Date() - 48 * 60 * 60 * 1000 &&
+          user.createdAt < new Date() - 24 * 60 * 60 * 1000
+      ).length;
+    const yesterdayUsers = users.filter(
+      (user) =>
+        user.createdAt >= new Date() - 48 * 60 * 60 * 1000 &&
+        user.createdAt < new Date() - 24 * 60 * 60 * 1000
+    ).length;
+    const yesterdayUsersGrowing =
+      yesterdayUsers >=
+      users.filter(
+        (user) =>
+          user.createdAt >= new Date() - 72 * 60 * 60 * 1000 &&
+          user.createdAt < new Date() - 48 * 60 * 60 * 1000
+      ).length;
+    const lastWeekUsers = users.filter(
+      (user) => user.createdAt >= new Date() - 7 * 24 * 60 * 60 * 1000
+    ).length;
+    const lastWeekUsersGrowing =
+      lastWeekUsers >=
+      users.filter(
+        (user) =>
+          user.createdAt >= new Date() - 14 * 24 * 60 * 60 * 1000 &&
+          user.createdAt < new Date() - 7 * 24 * 60 * 60 * 1000
+      ).length;
+    const lastMonthUsers = users.filter(
+      (user) => user.createdAt >= new Date() - 30 * 24 * 60 * 60 * 1000
+    ).length;
+    const lastMonthUsersGrowing =
+      lastMonthUsers >=
+      users.filter(
+        (user) =>
+          user.createdAt >= new Date() - 60 * 24 * 60 * 60 * 1000 &&
+          user.createdAt < new Date() - 30 * 24 * 60 * 60 * 1000
+      ).length;
+    const todayPayments = payments.filter(
+      (payment) => payment.createdAt >= new Date() - 24 * 60 * 60 * 1000
+    ).length;
+    const todayPaymentsGrowing =
+      todayPayments >=
+      payments.filter(
+        (payment) =>
+          payment.createdAt >= new Date() - 48 * 60 * 60 * 1000 &&
+          payment.createdAt < new Date() - 24 * 60 * 60 * 1000
+      ).length;
+    const yesterdayPayments = payments.filter(
+      (payment) =>
+        payment.createdAt >= new Date() - 48 * 60 * 60 * 1000 &&
+        payment.createdAt < new Date() - 24 * 60 * 60 * 1000
+    ).length;
+    const yesterdayPaymentsGrowing =
+      yesterdayPayments >=
+      payments.filter(
+        (payment) =>
+          payment.createdAt >= new Date() - 72 * 60 * 60 * 1000 &&
+          payment.createdAt < new Date() - 48 * 60 * 60 * 1000
+      ).length;
+    const lastWeekPayments = payments.filter(
+      (payment) => payment.createdAt >= new Date() - 7 * 24 * 60 * 60 * 1000
+    ).length;
+    const lastWeekPaymentsGrowing =
+      lastWeekPayments >=
+      payments.filter(
+        (payment) =>
+          payment.createdAt >= new Date() - 14 * 24 * 60 * 60 * 1000 &&
+          payment.createdAt < new Date() - 7 * 24 * 60 * 60 * 1000
+      ).length;
+    const lastMonthPayments = payments.filter(
+      (payment) => payment.createdAt >= new Date() - 30 * 24 * 60 * 60 * 1000
+    ).length;
+    const lastMonthPaymentsGrowing =
+      lastMonthPayments >=
+      payments.filter(
+        (payment) =>
+          payment.createdAt >= new Date() - 60 * 24 * 60 * 60 * 1000 &&
+          payment.createdAt < new Date() - 30 * 24 * 60 * 60 * 1000
+      ).length;
     const todayFiles = files.filter(
       (file) => file.createdAt >= new Date() - 24 * 60 * 60 * 1000
     ).length;
@@ -270,6 +348,48 @@ export const getStats = async (req, res) => {
             previousValue + currentValue.downloads,
           0
         );
+    const todayReports = reports.filter(
+      (report) => report.createdAt >= new Date() - 24 * 60 * 60 * 1000
+    ).length;
+    const todayReportsGrowing =
+      todayReports >=
+      reports.filter(
+        (report) =>
+          report.createdAt >= new Date() - 48 * 60 * 60 * 1000 &&
+          report.createdAt < new Date() - 24 * 60 * 60 * 1000
+      ).length;
+    const yesterdayReports = reports.filter(
+      (report) =>
+        report.createdAt >= new Date() - 48 * 60 * 60 * 1000 &&
+        report.createdAt < new Date() - 24 * 60 * 60 * 1000
+    ).length;
+    const yesterdayReportsGrowing =
+      yesterdayReports >=
+      reports.filter(
+        (report) =>
+          report.createdAt >= new Date() - 72 * 60 * 60 * 1000 &&
+          report.createdAt < new Date() - 48 * 60 * 60 * 1000
+      ).length;
+    const lastWeekReports = reports.filter(
+      (report) => report.createdAt >= new Date() - 7 * 24 * 60 * 60 * 1000
+    ).length;
+    const lastWeekReportsGrowing =
+      lastWeekReports >=
+      reports.filter(
+        (report) =>
+          report.createdAt >= new Date() - 14 * 24 * 60 * 60 * 1000 &&
+          report.createdAt < new Date() - 7 * 24 * 60 * 60 * 1000
+      ).length;
+    const lastMonthReports = reports.filter(
+      (report) => report.createdAt >= new Date() - 30 * 24 * 60 * 60 * 1000
+    ).length;
+    const lastMonthReportsGrowing =
+      lastMonthReports >=
+      reports.filter(
+        (report) =>
+          report.createdAt >= new Date() - 60 * 24 * 60 * 60 * 1000 &&
+          report.createdAt < new Date() - 30 * 24 * 60 * 60 * 1000
+      ).length;
     res.json({
       success: true,
       stats: {
@@ -282,6 +402,26 @@ export const getStats = async (req, res) => {
           lastWeekVisitsGrowing: lastWeekVisitsGrowing,
           lastMonthVisits: lastMonthVisits,
           lastMonthVisitsGrowing: lastMonthVisitsGrowing,
+        },
+        users: {
+          todayUsers: todayUsers,
+          todayUsersGrowing: todayUsersGrowing,
+          yesterdayUsers: yesterdayUsers,
+          yesterdayUsersGrowing: yesterdayUsersGrowing,
+          lastWeekUsers: lastWeekUsers,
+          lastWeekUsersGrowing: lastWeekUsersGrowing,
+          lastMonthUsers: lastMonthUsers,
+          lastMonthUsersGrowing: lastMonthUsersGrowing,
+        },
+        payments: {
+          todayPayments: todayPayments,
+          todayPaymentsGrowing: todayPaymentsGrowing,
+          yesterdayPayments: yesterdayPayments,
+          yesterdayPaymentsGrowing: yesterdayPaymentsGrowing,
+          lastWeekPayments: lastWeekPayments,
+          lastWeekPaymentsGrowing: lastWeekPaymentsGrowing,
+          lastMonthPayments: lastMonthPayments,
+          lastMonthPaymentsGrowing: lastMonthPaymentsGrowing,
         },
         files: {
           todayFiles: todayFiles,
@@ -312,6 +452,16 @@ export const getStats = async (req, res) => {
           lastWeekDownloadsGrowing: lastWeekDownloadsGrowing,
           lastMonthDownloads: lastMonthDownloads,
           lastMonthDownloadsGrowing: lastMonthDownloadsGrowing,
+        },
+        reports: {
+          todayReports: todayReports,
+          todayReportsGrowing: todayReportsGrowing,
+          yesterdayReports: yesterdayReports,
+          yesterdayReportsGrowing: yesterdayReportsGrowing,
+          lastWeekReports: lastWeekReports,
+          lastWeekReportsGrowing: lastWeekReportsGrowing,
+          lastMonthReports: lastMonthReports,
+          lastMonthReportsGrowing: lastMonthReports,
         },
       },
     });
