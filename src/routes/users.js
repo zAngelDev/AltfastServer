@@ -18,6 +18,12 @@ usersRouter.get(
   usersController.getAnnouncements
 );
 
+usersRouter.get(
+  "/getAnnouncementsCount",
+  passport.authenticate("jwt", { session: false }),
+  usersController.getAnnouncementsCount
+);
+
 usersRouter.post(
   "/logAnnouncementVisit",
   passport.authenticate("jwt", { session: false }),

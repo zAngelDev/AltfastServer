@@ -326,4 +326,6 @@ export const getStats = async (req, res) => {
 
 export const getAnnouncements = async (req, res) => {};
 
+export const getAnnouncementsCount = async (req, res) => {};
+
 export const logAnnouncementVisit = async (req, res) => {};
