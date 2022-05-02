@@ -323,3 +323,7 @@ export const getStats = async (req, res) => {
     console.log(error);
   }
 };
+
+export const getAnnouncements = async (req, res) => {};
+
+export const logAnnouncementVisit = async (req, res) => {};

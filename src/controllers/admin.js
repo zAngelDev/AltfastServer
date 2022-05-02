@@ -461,7 +461,7 @@ export const getStats = async (_, res) => {
           lastWeekReports: lastWeekReports,
           lastWeekReportsGrowing: lastWeekReportsGrowing,
           lastMonthReports: lastMonthReports,
-          lastMonthReportsGrowing: lastMonthReports,
+          lastMonthReportsGrowing: lastMonthReportsGrowing,
         },
       },
     });
@@ -473,3 +473,9 @@ export const getStats = async (_, res) => {
     console.log(error);
   }
 };
+
+export const createAnnouncement = async (req, res) => {};
+
+export const editAnnouncement = async (req, res) => {};
+
+export const deleteAnnouncement = async (req, res) => {};
