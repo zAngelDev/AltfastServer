@@ -1,7 +1,48 @@
+import User from "../models/User";
 import Folder from "../models/Folder";
 import File from "../models/File";
+import Announcement from "../models/Announcement";
+import { isAdmin } from "../utils/utils";
+import fs from "fs";
 
-export const getUserAvatar = async () => {};
+export const getUser = async (req, res) => {
+  const { uuid } = req.body;
+  try {
+    let user = uuid ? await User.findOne({ uuid: uuid }) : req.user;
+    if (!user) {
+      res.json({
+        error: true,
+        message: "User not found",
+      });
+      return;
+    }
+    let avatarFile;
+    const avatarFileExists = fs.existsSync(`media/users/avatars/${uuid}`);
+    if (avatarFileExists) {
+      avatarFile = fs.readFileSync(`media/users/avatars/${uuid}`);
+    } else {
+      avatarFile = await fs.promises.readFile("media/utils/transparent");
+    }
+    const formattedUser = {
+      uuid: user.uuid,
+      avatar: avatarFile,
+      username: user.username,
+      email: user.email,
+      plan: user.plan,
+      isAdmin: isAdmin(user),
+    };
+    res.json({
+      success: true,
+      user: formattedUser,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
 
 export const getStats = async (req, res) => {
   const user = req.user;
@@ -324,8 +365,127 @@ export const getStats = async (req, res) => {
   }
 };
 
-export const getAnnouncements = async (req, res) => {};
+export const getAnnouncements = async (req, res) => {
+  const { page } = req.body;
+  if (!page) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const skipResults = (page - 1) * 50;
+    let announcements = await Announcement.find()
+      .sort({ createdAt: -1 })
+      .skip(skipResults)
+      .limit(50);
+    announcements = announcements.map((announcement) =>
+      announcement.toObject()
+    );
+    const formattedAnnouncements = announcements.map((announcement) => ({
+      uuid: announcement.uuid,
+      title: announcement.title,
+      announcement: announcement.announcement,
+      views: announcement.views.length,
+      createdAt: announcement.createdAt,
+    }));
+    res.json({
+      success: true,
+      announcements: formattedAnnouncements,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
 
-export const getAnnouncementsCount = async (req, res) => {};
+export const getNewAnnouncements = async (req, res) => {
+  try {
+    const user = req.user.uuid;
+    const newAnnouncements = await Announcement.count({ views: { $ne: user } });
+    res.json({
+      success: true,
+      newAnnouncements: newAnnouncements,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
 
-export const logAnnouncementVisit = async (req, res) => {};
+export const getAnnouncement = async (req, res) => {
+  const { uuid } = req.body;
+  if (!uuid) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const announcement = await Announcement.findOne({ uuid: uuid });
+    if (!announcement) {
+      res.json({
+        error: true,
+        message: "Announcement not found",
+      });
+      return;
+    }
+    const formattedAnnouncement = {
+      uuid: announcement.uuid,
+      title: announcement.title,
+      announcement: announcement.announcement,
+      views: announcement.views.length,
+      createdAt: announcement.createdAt,
+    };
+    res.json({
+      success: true,
+      announcement: formattedAnnouncement,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const logAnnouncementVisit = async (req, res) => {
+  const { uuid } = req.body;
+  if (!uuid) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const announcementExists = await Announcement.findOne({ uuid: uuid });
+    if (!announcementExists) {
+      res.json({
+        error: true,
+        message: "Announcement not found",
+      });
+      return;
+    }
+    const user = req.user.uuid;
+    await Announcement.updateOne({ uuid: uuid }, { $push: { views: user } });
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      messgae: error,
+    });
+    console.log(error);
+  }
+};

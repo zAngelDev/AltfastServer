@@ -12,7 +12,7 @@ const AnnouncementSchema = new Schema(
       type: String,
       required: true,
     },
-    alert: {
+    announcement: {
       type: String,
       required: true,
     },

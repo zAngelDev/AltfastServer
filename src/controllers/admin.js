@@ -3,8 +3,17 @@ import File from "../models/File";
 import User from "../models/User";
 import Payment from "../models/Payment";
 import Report from "../models/Report";
+import Announcement from "../models/Announcement";
+import validator from "validator";
+import { isAdmin } from "../utils/utils";
 
-export const getStats = async (_, res) => {
+export const getStats = async (req, res) => {
+  const user = req.user;
+  const canAccess = isAdmin(user);
+  if (!canAccess) {
+    res.status(401).end();
+    return;
+  }
   try {
     const files = (await Folder.find()).concat(await File.find());
     const users = await User.find();
@@ -474,8 +483,157 @@ export const getStats = async (_, res) => {
   }
 };
 
-export const createAnnouncement = async (req, res) => {};
+export const createAnnouncement = async (req, res) => {
+  const user = req.user;
+  const canAccess = isAdmin(user);
+  if (!canAccess) {
+    res.status(401).end();
+    return;
+  }
+  const { title, announcement } = req.body;
+  if (!title || !announcement) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  const isTitleValid = validator.isLength(title, { min: 5, max: 100 });
+  if (!isTitleValid) {
+    res.json({
+      error: true,
+      message: "Invalid information",
+    });
+    return;
+  }
+  try {
+    const isTitleRepeated = await Announcement.findOne({
+      title: { $regex: `^${title}$`, $options: "i" },
+    });
+    if (isTitleRepeated) {
+      res.json({
+        error: true,
+        message: "Repeated title",
+      });
+      return;
+    }
+    const announcement = await new Announcement({
+      title: title,
+      announcement: announcement,
+    }).save();
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
 
-export const editAnnouncement = async (req, res) => {};
+export const editAnnouncement = async (req, res) => {
+  const user = req.user;
+  const canAccess = isAdmin(user);
+  if (!canAccess) {
+    res.status(401).end();
+    return;
+  }
+  const { uuid, title, announcement } = req.body;
+  if (!uuid || (!title && !announcement)) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  if (title) {
+    const isTitleValid = validator.isLength(title, { min: 5, max: 100 });
+    if (!isTitleValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  try {
+    const announcementExists = await Announcement.findOne({ uuid: uuid });
+    if (!announcementExists) {
+      res.json({
+        error: true,
+        message: "Announcement not found",
+      });
+      return;
+    }
+    if (title) {
+      const isTitleRepeated = await Announcement.findOne({
+        title: { $regex: `^${title}$`, $options: "i" },
+      });
+      if (isTitleRepeated) {
+        res.json({
+          error: true,
+          message: "Repeated title",
+        });
+        return;
+      }
+    }
+    await Announcement.updateOne(
+      { uuid: uuid },
+      title && announcement
+        ? { title: title, announcement: announcement }
+        : title
+        ? { title: title }
+        : announcement
+        ? { announcement: announcement }
+        : null
+    );
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
 
-export const deleteAnnouncement = async (req, res) => {};
+export const deleteAnnouncement = async (req, res) => {
+  const user = req.user;
+  const canAccess = isAdmin(user);
+  if (!canAccess) {
+    res.status(401).end();
+    return;
+  }
+  const { uuid } = req.body;
+  if (!uuid) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const announcementExists = await Announcement.findOne({ uuid: uuid });
+    if (!announcementExists) {
+      res.json({
+        error: true,
+        message: "Announcement not found",
+      });
+      return;
+    }
+    await Announcement.deleteOne({ uuid: uuid });
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};

@@ -4,7 +4,11 @@ import passport from "passport";
 
 const usersRouter = Router();
 
-usersRouter.post("/getUserAvatar", usersController.getUserAvatar);
+usersRouter.post(
+  "/getUser",
+  passport.authenticate("jwt", { session: false }),
+  usersController.getUser
+);
 
 usersRouter.get(
   "/getStats",
@@ -12,16 +16,22 @@ usersRouter.get(
   usersController.getStats
 );
 
-usersRouter.get(
+usersRouter.post(
   "/getAnnouncements",
   passport.authenticate("jwt", { session: false }),
   usersController.getAnnouncements
 );
 
 usersRouter.get(
-  "/getAnnouncementsCount",
+  "/getNewAnnouncements",
   passport.authenticate("jwt", { session: false }),
-  usersController.getAnnouncementsCount
+  usersController.getNewAnnouncements
+);
+
+usersRouter.get(
+  "/getAnnouncement",
+  passport.authenticate("jwt", { session: false }),
+  usersController.getAnnouncement
 );
 
 usersRouter.post(

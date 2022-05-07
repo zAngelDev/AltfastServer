@@ -8,6 +8,8 @@ import {
 } from "../handlers/email";
 import jwt from "jsonwebtoken";
 import validator from "validator";
+import { isAdmin } from "../utils/utils";
+import fs from "fs";
 
 export const register = async (req, res) => {
   const { username, email, password } = req.body;
@@ -482,9 +484,25 @@ export const checkAuthToken = async (req, res) => {
       });
       return;
     }
+    let avatarFile;
+    const avatarFileExists = fs.existsSync(`media/users/avatars/${uuid}`);
+    if (avatarFileExists) {
+      avatarFile = fs.readFileSync(`media/users/avatars/${uuid}`);
+    } else {
+      avatarFile = await fs.promises.readFile("media/utils/transparent");
+    }
+    const formattedUser = {
+      uuid: user.uuid,
+      avatar: avatarFile,
+      username: user.username,
+      email: user.email,
+      plan: user.plan,
+      isAdmin: isAdmin(user),
+    };
     res.json({
       success: true,
       isValid: true,
+      user: formattedUser,
     });
   } catch (error) {
     const isAuthTokenExpired = error.name === "TokenExpiredError";

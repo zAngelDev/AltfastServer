@@ -25,24 +25,24 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
-    roles: {
-      type: [String],
-      default: ["USER"],
-      required: true,
-    },
-    verificated: {
-      type: Boolean,
-      default: false,
-      required: true,
-    },
     plan: {
       type: String,
       default: "BASIC",
       required: true,
     },
+    roles: {
+      type: [String],
+      default: ["USER"],
+      required: true,
+    },
     files: {
       type: Array,
       default: [],
+    },
+    verificated: {
+      type: Boolean,
+      default: false,
+      required: true,
     },
   },
   {
