@@ -4,6 +4,7 @@ import User from "../models/User";
 import Payment from "../models/Payment";
 import Report from "../models/Report";
 import Announcement from "../models/Announcement";
+import { io } from "../handlers/socket";
 import validator from "validator";
 import { isAdmin } from "../utils/utils";
 
@@ -521,6 +522,14 @@ export const createAnnouncement = async (req, res) => {
       title: title,
       announcement: announcement,
     }).save();
+    const formattedAnnouncement = {
+      uuid: announcement.uuid,
+      title: announcement.title,
+      announcement: announcement.announcement,
+      views: announcement.views.length,
+      createdAt: announcement.createdAt,
+    };
+    io.emit("newAnnouncement", formattedAnnouncement);
     res.json({
       success: true,
     });

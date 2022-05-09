@@ -5,7 +5,7 @@ import Announcement from "../models/Announcement";
 import { isAdmin } from "../utils/utils";
 import fs from "fs";
 
-export const getUser = async (req, res) => {
+export const getPasswordLength = async (req, res) => {
   const { uuid } = req.body;
   try {
     let user = uuid ? await User.findOne({ uuid: uuid }) : req.user;
@@ -16,24 +16,10 @@ export const getUser = async (req, res) => {
       });
       return;
     }
-    let avatarFile;
-    const avatarFileExists = fs.existsSync(`media/users/avatars/${uuid}`);
-    if (avatarFileExists) {
-      avatarFile = fs.readFileSync(`media/users/avatars/${uuid}`);
-    } else {
-      avatarFile = await fs.promises.readFile("media/utils/transparent");
-    }
-    const formattedUser = {
-      uuid: user.uuid,
-      avatar: avatarFile,
-      username: user.username,
-      email: user.email,
-      plan: user.plan,
-      isAdmin: isAdmin(user),
-    };
+    const passwordLength = user.passwordLength;
     res.json({
       success: true,
-      user: formattedUser,
+      passwordLength: passwordLength,
     });
   } catch (error) {
     res.json({
@@ -393,23 +379,6 @@ export const getAnnouncements = async (req, res) => {
     res.json({
       success: true,
       announcements: formattedAnnouncements,
-    });
-  } catch (error) {
-    res.json({
-      error: true,
-      message: error,
-    });
-    console.log(error);
-  }
-};
-
-export const getNewAnnouncements = async (req, res) => {
-  try {
-    const user = req.user.uuid;
-    const newAnnouncements = await Announcement.count({ views: { $ne: user } });
-    res.json({
-      success: true,
-      newAnnouncements: newAnnouncements,
     });
   } catch (error) {
     res.json({

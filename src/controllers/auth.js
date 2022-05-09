@@ -2,6 +2,7 @@ import User from "../models/User";
 import Verification from "../models/Verification";
 import RecoverPassword from "../models/RecoverPassword";
 import ChangePassword from "../models/ChangePassword";
+import Announcement from "../models/Announcement";
 import {
   sendRecoverPasswordEmail,
   sendVerificationEmail,
@@ -135,6 +136,27 @@ export const login = async (req, res) => {
       });
       return;
     }
+    let avatarFile;
+    const avatarFileExists = fs.existsSync(`media/users/avatars/${user.uuid}`);
+    if (avatarFileExists) {
+      avatarFile = await fs.promises.readFile(
+        `media/users/avatars/${user.uuid}`
+      );
+    } else {
+      avatarFile = await fs.promises.readFile("media/utils/transparent");
+    }
+    const newAnnouncements = await Announcement.count({
+      views: { $ne: user.uuid },
+    });
+    const formattedUser = {
+      uuid: user.uuid,
+      avatar: avatarFile,
+      username: user.username,
+      email: user.email,
+      plan: user.plan,
+      isAdmin: isAdmin(user),
+      newAnnouncements: newAnnouncements,
+    };
     const payload = {
       uuid: user.uuid,
       password: user.password,
@@ -149,6 +171,7 @@ export const login = async (req, res) => {
         res.json({
           success: true,
           authToken: `Bearer ${authToken}`,
+          user: formattedUser,
         });
       }
     );
@@ -179,7 +202,7 @@ export const verificate = async (req, res) => {
     return;
   }
   try {
-    const user = await User.findOne({ email: email });
+    let user = await User.findOne({ email: email });
     if (!user) {
       res.json({
         error: true,
@@ -208,6 +231,30 @@ export const verificate = async (req, res) => {
       }
       await Verification.deleteOne({ email: email });
       await User.updateOne({ email: email }, { verificated: true });
+      user = await User.findOne({ uuid: user.uuid });
+      let avatarFile;
+      const avatarFileExists = fs.existsSync(
+        `media/users/avatars/${user.uuid}`
+      );
+      if (avatarFileExists) {
+        avatarFile = await fs.promises.readFile(
+          `media/users/avatars/${user.uuid}`
+        );
+      } else {
+        avatarFile = await fs.promises.readFile("media/utils/transparent");
+      }
+      const newAnnouncements = await Announcement.count({
+        views: { $ne: user.uuid },
+      });
+      const formattedUser = {
+        uuid: user.uuid,
+        avatar: avatarFile,
+        username: user.username,
+        email: user.email,
+        plan: user.plan,
+        isAdmin: isAdmin(user),
+        newAnnouncements: newAnnouncements,
+      };
       const payload = {
         uuid: user.uuid,
         password: user.password,
@@ -222,6 +269,7 @@ export const verificate = async (req, res) => {
           res.json({
             success: true,
             authToken: `Bearer ${authToken}`,
+            user: formattedUser,
           });
         }
       );
@@ -343,7 +391,29 @@ export const changePassword = async (req, res) => {
       return;
     }
     await ChangePassword.deleteOne({ email: email });
-    user = await User.updateOne({ email: email }, { password: password });
+    await User.updateOne({ email: email }, { password: password });
+    user = await User.findOne({ uuid: user.uuid });
+    let avatarFile;
+    const avatarFileExists = fs.existsSync(`media/users/avatars/${user.uuid}`);
+    if (avatarFileExists) {
+      avatarFile = await fs.promises.readFile(
+        `media/users/avatars/${user.uuid}`
+      );
+    } else {
+      avatarFile = await fs.promises.readFile("media/utils/transparent");
+    }
+    const newAnnouncements = await Announcement.count({
+      views: { $ne: user.uuid },
+    });
+    const formattedUser = {
+      uuid: user.uuid,
+      avatar: avatarFile,
+      username: user.username,
+      email: user.email,
+      plan: user.plan,
+      isAdmin: isAdmin(user),
+      newAnnouncements: newAnnouncements,
+    };
     const payload = {
       uuid: user.uuid,
       password: user.password,
@@ -358,6 +428,7 @@ export const changePassword = async (req, res) => {
         res.json({
           success: true,
           authToken: `Bearer ${authToken}`,
+          user: formattedUser,
         });
       }
     );
@@ -487,10 +558,13 @@ export const checkAuthToken = async (req, res) => {
     let avatarFile;
     const avatarFileExists = fs.existsSync(`media/users/avatars/${uuid}`);
     if (avatarFileExists) {
-      avatarFile = fs.readFileSync(`media/users/avatars/${uuid}`);
+      avatarFile = await fs.promises.readFile(`media/users/avatars/${uuid}`);
     } else {
       avatarFile = await fs.promises.readFile("media/utils/transparent");
     }
+    const newAnnouncements = await Announcement.count({
+      views: { $ne: user.uuid },
+    });
     const formattedUser = {
       uuid: user.uuid,
       avatar: avatarFile,
@@ -498,6 +572,7 @@ export const checkAuthToken = async (req, res) => {
       email: user.email,
       plan: user.plan,
       isAdmin: isAdmin(user),
+      newAnnouncements: newAnnouncements,
     };
     res.json({
       success: true,

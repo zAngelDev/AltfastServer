@@ -5,9 +5,9 @@ import passport from "passport";
 const usersRouter = Router();
 
 usersRouter.post(
-  "/getUser",
+  "/getPasswordLength",
   passport.authenticate("jwt", { session: false }),
-  usersController.getUser
+  usersController.getPasswordLength
 );
 
 usersRouter.get(
@@ -20,12 +20,6 @@ usersRouter.post(
   "/getAnnouncements",
   passport.authenticate("jwt", { session: false }),
   usersController.getAnnouncements
-);
-
-usersRouter.get(
-  "/getNewAnnouncements",
-  passport.authenticate("jwt", { session: false }),
-  usersController.getNewAnnouncements
 );
 
 usersRouter.get(
