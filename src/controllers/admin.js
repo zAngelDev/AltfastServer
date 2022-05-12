@@ -590,13 +590,10 @@ export const editAnnouncement = async (req, res) => {
     }
     await Announcement.updateOne(
       { uuid: uuid },
-      title && announcement
-        ? { title: title, announcement: announcement }
-        : title
-        ? { title: title }
-        : announcement
-        ? { announcement: announcement }
-        : null
+      {
+        ...(title && { title: title }),
+        ...(announcement && { announcement: announcement }),
+      }
     );
     res.json({
       success: true,

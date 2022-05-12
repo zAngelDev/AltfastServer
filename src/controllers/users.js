@@ -2,33 +2,14 @@ import User from "../models/User";
 import Folder from "../models/Folder";
 import File from "../models/File";
 import Announcement from "../models/Announcement";
-import { isAdmin } from "../utils/utils";
-import fs from "fs";
-
-export const getPasswordLength = async (req, res) => {
-  const { uuid } = req.body;
-  try {
-    let user = uuid ? await User.findOne({ uuid: uuid }) : req.user;
-    if (!user) {
-      res.json({
-        error: true,
-        message: "User not found",
-      });
-      return;
-    }
-    const passwordLength = user.passwordLength;
-    res.json({
-      success: true,
-      passwordLength: passwordLength,
-    });
-  } catch (error) {
-    res.json({
-      error: true,
-      message: error,
-    });
-    console.log(error);
-  }
-};
+import EditEmailConfirm from "../models/EditEmailConfirm";
+import EditPasswordConfirm from "../models/EditPasswordConfirm";
+import {
+  sendEditEmailConfirmEmail,
+  sendEditPasswordConfirmEmail,
+} from "../handlers/email";
+import jwt from "jsonwebtoken";
+import validator from "validator";
 
 export const getStats = async (req, res) => {
   const user = req.user;
@@ -454,6 +435,337 @@ export const logAnnouncementVisit = async (req, res) => {
     res.json({
       error: true,
       messgae: error,
+    });
+    console.log(error);
+  }
+};
+
+export const editUser = async (req, res) => {
+  const { uuid, username, email, password } = req.body;
+  const avatar = req.files?.avatar;
+  if (!avatar && !username && !email && !password) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  if (avatar) {
+    const isAvatarValid =
+      (avatar.mimetype === "image/jpeg" ||
+        avatar.mimetype === "image/jpg" ||
+        avatar.mimetype === "image/png" ||
+        avatar.mimetype === "image/webp" ||
+        avatar.mimetype === "image/gif") &&
+      avatar.size / 1024 / 1024 <= 10;
+    if (!isAvatarValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  if (username) {
+    const isUsernameValid = validator.isLength(username, { min: 4, max: 16 });
+    if (!isUsernameValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  if (email) {
+    const isEmailValid = validator.isEmail(email);
+    if (!isEmailValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  if (password) {
+    const isPasswordValid = validator.isLength(password, { min: 6, max: 50 });
+    if (!isPasswordValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  try {
+    let user = uuid ? await User.findOne({ uuid: uuid }) : req.user;
+    if (!user) {
+      res.json({
+        error: true,
+        message: "User not found",
+      });
+      return;
+    }
+    const isUsernameRepeated =
+      username &&
+      (await User.findOne({
+        username: { $regex: `^${username}$`, $options: "i" },
+      }));
+    const isEmailRepeated =
+      email &&
+      (await User.findOne({
+        email: { $regex: `^${email}$`, $options: "i" },
+        verificated: true,
+      }));
+    if (isUsernameRepeated) {
+      res.json({
+        error: true,
+        message: "Repeated username",
+      });
+      return;
+    }
+    if (isEmailRepeated) {
+      res.json({
+        error: true,
+        message: "Repeated email",
+      });
+      return;
+    }
+    if (isUsernameRepeated && isEmailRepeated) {
+      res.json({
+        error: true,
+        message: "Repeated information",
+      });
+      return;
+    }
+    if (avatar) {
+      await avatar.mv(`media/users/avatars/${user.uuid}`);
+    }
+    if (username) {
+      await User.updateOne({ uuid: user.uuid }, { username: username });
+    }
+    if (email) {
+      const isEditEmailConfirming = await EditEmailConfirm.findOne({
+        user: user.uuid,
+      });
+      if (isEditEmailConfirming) {
+        await EditEmailConfirm.deleteOne({ user: user.uuid });
+      }
+      await sendEditEmailConfirmEmail(user.uuid, email, user.username);
+      res.json({
+        success: true,
+      });
+      return;
+    }
+    if (password) {
+      const isEditPasswordConfirming = await EditPasswordConfirm.findOne({
+        user: user.uuid,
+      });
+      if (isEditPasswordConfirming) {
+        await EditPasswordConfirm.deleteOne({ user: user.uuid });
+      }
+      await sendEditPasswordConfirmEmail(
+        user.uuid,
+        user.email,
+        password,
+        user.username
+      );
+      res.json({
+        success: true,
+      });
+      return;
+    }
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const confirmEditEmail = async (req, res) => {
+  const { code } = req.body;
+  if (!code) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const user = req.user.uuid;
+    const editEmailConfirmation = await EditEmailConfirm.findOne({
+      user: user,
+    });
+    if (!editEmailConfirmation) {
+      res.json({
+        error: true,
+        message: "Email edit confirmation not found",
+      });
+      return;
+    }
+    const isCodeValid = await editEmailConfirmation.isCodeValid(code);
+    if (!isCodeValid) {
+      res.json({
+        error: true,
+        message: "Invalid code",
+      });
+      return;
+    }
+    const email = editEmailConfirmation.email;
+    await User.updateOne({ uuid: user }, { email: email });
+    res.json({
+      success: true,
+      email: email,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const confirmEditPassword = async (req, res) => {
+  const { code } = req.body;
+  if (!code) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    let user = req.user;
+    const editPasswordConfirmation = await EditPasswordConfirm.findOne({
+      user: user.uuid,
+    });
+    if (!editPasswordConfirmation) {
+      res.json({
+        error: true,
+        message: "Password edit confirmation not found",
+      });
+      return;
+    }
+    const isCodeValid = await editPasswordConfirmation.isCodeValid(code);
+    if (!isCodeValid) {
+      res.json({
+        error: true,
+        message: "Invalid code",
+      });
+      return;
+    }
+    const password = editPasswordConfirmation.password;
+    const passwordLength = password.length;
+    await User.updateOne({ uuid: user.uuid }, { password: password });
+    user = await User.findOne({ uuid: user.uuid });
+    const payload = {
+      uuid: user.uuid,
+      password: user.password,
+    };
+    jwt.sign(
+      payload,
+      process.env.SECRET_KEY,
+      {
+        expiresIn: 31556926,
+      },
+      (_, authToken) => {
+        res.json({
+          success: true,
+          authToken: `Bearer ${authToken}`,
+          passwordLength: passwordLength,
+        });
+      }
+    );
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const resendConfirmEditEmailEmail = async (req, res) => {
+  try {
+    const user = req.user;
+    const editEmailConfirmation = await EditEmailConfirm.findOne({
+      user: user.uuid,
+    });
+    if (!editEmailConfirmation) {
+      res.json({
+        error: true,
+        message: "Edit email confirmation not found",
+      });
+      return;
+    }
+    const isResendEmailCooldownExpired =
+      Date.now() - editEmailConfirmation.expireAt >= 5 * 60 * 1000;
+    if (!isResendEmailCooldownExpired) {
+      res.json({
+        error: true,
+        message: "Resend email cooldown not expired",
+      });
+      return;
+    }
+    await EditEmailConfirm.deleteOne({ user: user.uuid });
+    await sendEditEmailConfirmEmail(
+      user.uuid,
+      editEmailConfirmation.email,
+      user.username
+    );
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const resendConfirmEditPasswordEmail = async (req, res) => {
+  try {
+    const user = req.user;
+    const editPasswordConfirmation = await EditPasswordConfirm.findOne({
+      user: user.uuid,
+    });
+    if (!editPasswordConfirmation) {
+      res.json({
+        error: true,
+        message: "Edit password confirmation not found",
+      });
+      return;
+    }
+    const isResendEmailCooldownExpired =
+      Date.now() - editPasswordConfirmation.expireAt >= 5 * 60 * 1000;
+    if (!isResendEmailCooldownExpired) {
+      res.json({
+        error: true,
+        message: "Resend email cooldown not expired",
+      });
+      return;
+    }
+    await EditPasswordConfirm.deleteOne({ user: user.uuid });
+    await sendEditPasswordConfirmEmail(
+      user.uuid,
+      user.email,
+      editPasswordConfirmation.password,
+      user.username
+    );
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
     });
     console.log(error);
   }

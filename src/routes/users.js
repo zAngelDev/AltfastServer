@@ -4,12 +4,6 @@ import passport from "passport";
 
 const usersRouter = Router();
 
-usersRouter.post(
-  "/getPasswordLength",
-  passport.authenticate("jwt", { session: false }),
-  usersController.getPasswordLength
-);
-
 usersRouter.get(
   "/getStats",
   passport.authenticate("jwt", { session: false }),
@@ -32,6 +26,36 @@ usersRouter.post(
   "/logAnnouncementVisit",
   passport.authenticate("jwt", { session: false }),
   usersController.logAnnouncementVisit
+);
+
+usersRouter.post(
+  "/editUser",
+  passport.authenticate("jwt", { session: false }),
+  usersController.editUser
+);
+
+usersRouter.post(
+  "/confirmEditEmail",
+  passport.authenticate("jwt", { session: false }),
+  usersController.confirmEditEmail
+);
+
+usersRouter.post(
+  "/confirmEditPassword",
+  passport.authenticate("jwt", { session: false }),
+  usersController.confirmEditPassword
+);
+
+usersRouter.post(
+  "/resendConfirmEditEmailEmail",
+  passport.authenticate("jwt", { session: false }),
+  usersController.resendConfirmEditEmailEmail
+);
+
+usersRouter.post(
+  "/resendConfirmEditPasswordEmail",
+  passport.authenticate("jwt", { session: false }),
+  usersController.resendConfirmEditPasswordEmail
 );
 
 export default usersRouter;

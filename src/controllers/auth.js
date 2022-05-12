@@ -77,7 +77,7 @@ export const register = async (req, res) => {
     if (isVerificationCodeActive) {
       await Verification.deleteOne({ email: email });
     }
-    await sendVerificationEmail(username, email);
+    await sendVerificationEmail(email, username);
     res.json({
       success: true,
     });
@@ -120,7 +120,6 @@ export const login = async (req, res) => {
     }
     const isUserVerificating = !user.verificated;
     if (isUserVerificating) {
-      const username = user.username;
       const email = user.email;
       const isVerificationCodeActive = await Verification.findOne({
         email: email,
@@ -128,7 +127,7 @@ export const login = async (req, res) => {
       if (isVerificationCodeActive) {
         await Verification.deleteOne({ email: email });
       }
-      await sendVerificationEmail(username, email);
+      await sendVerificationEmail(user.email, user.username);
       res.json({
         error: true,
         message: "User is verificating",
@@ -153,6 +152,7 @@ export const login = async (req, res) => {
       avatar: avatarFile,
       username: user.username,
       email: user.email,
+      passwordLength: user.passwordLength,
       plan: user.plan,
       isAdmin: isAdmin(user),
       newAnnouncements: newAnnouncements,
@@ -220,8 +220,14 @@ export const verificate = async (req, res) => {
         return;
       }
       const verification = await Verification.findOne({ email: email });
-      const isVerificationCodeValid =
-        verification && (await verification.isCodeValid(code));
+      if (!verification) {
+        res.json({
+          error: true,
+          message: "Verification not found",
+        });
+        return;
+      }
+      const isVerificationCodeValid = await verification.isCodeValid(code);
       if (!isVerificationCodeValid) {
         res.json({
           error: true,
@@ -251,6 +257,7 @@ export const verificate = async (req, res) => {
         avatar: avatarFile,
         username: user.username,
         email: user.email,
+        passwordLength: user.passwordLength,
         plan: user.plan,
         isAdmin: isAdmin(user),
         newAnnouncements: newAnnouncements,
@@ -276,8 +283,14 @@ export const verificate = async (req, res) => {
     }
     if (mode === "RECOVER_PASSWORD") {
       const verification = await RecoverPassword.findOne({ email: email });
-      const isVerificationCodeValid =
-        verification && (await verification.isCodeValid(code));
+      if (!verification) {
+        res.json({
+          error: true,
+          message: "Verification not found",
+        });
+        return;
+      }
+      const isVerificationCodeValid = await verification.isCodeValid(code);
       if (!isVerificationCodeValid) {
         res.json({
           error: true,
@@ -330,8 +343,7 @@ export const recoverPassword = async (req, res) => {
     if (isUserRecoveringPassword) {
       await RecoverPassword.deleteOne({ email: email });
     }
-    const username = user.username;
-    await sendRecoverPasswordEmail(username, email);
+    await sendRecoverPasswordEmail(email, user.username);
     res.json({
       success: true,
     });
@@ -381,8 +393,14 @@ export const changePassword = async (req, res) => {
       return;
     }
     const verification = await ChangePassword.findOne({ email: email });
-    const isVerificationCodeValid =
-      verification && (await verification.isCodeValid(code));
+    if (!verification) {
+      res.json({
+        error: true,
+        message: "Verification not found",
+      });
+      return;
+    }
+    const isVerificationCodeValid = await verification.isCodeValid(code);
     if (!isVerificationCodeValid) {
       res.json({
         error: true,
@@ -410,6 +428,7 @@ export const changePassword = async (req, res) => {
       avatar: avatarFile,
       username: user.username,
       email: user.email,
+      passwordLength: user.passwordLength,
       plan: user.plan,
       isAdmin: isAdmin(user),
       newAnnouncements: newAnnouncements,
@@ -466,7 +485,6 @@ export const resendVerificationEmail = async (req, res) => {
     });
     return;
   }
-  const username = user.username;
   if (mode === "REGISTER") {
     const isUserVerificating = !user.verificated;
     if (!isUserVerificating) {
@@ -479,19 +497,24 @@ export const resendVerificationEmail = async (req, res) => {
     const verification = await Verification.findOne({
       email: email,
     });
-    if (verification) {
-      const isResendEmailCooldownExpired =
-        Date.now() - verification.expireAt >= 5 * 60 * 1000;
-      if (!isResendEmailCooldownExpired) {
-        res.json({
-          error: true,
-          message: "Resend email cooldown not expired",
-        });
-        return;
-      }
-      await Verification.deleteOne({ email: email });
+    if (!verification) {
+      res.json({
+        error: true,
+        message: "Verification not found",
+      });
+      return;
     }
-    await sendVerificationEmail(username, email);
+    const isResendEmailCooldownExpired =
+      Date.now() - verification.expireAt >= 5 * 60 * 1000;
+    if (!isResendEmailCooldownExpired) {
+      res.json({
+        error: true,
+        message: "Resend email cooldown not expired",
+      });
+      return;
+    }
+    await Verification.deleteOne({ email: email });
+    await sendVerificationEmail(email, user.username);
     res.json({
       success: true,
     });
@@ -510,19 +533,24 @@ export const resendVerificationEmail = async (req, res) => {
     const recoverPassword = await RecoverPassword.findOne({
       email: email,
     });
-    if (recoverPassword) {
-      const isResendEmailCooldownExpired =
-        Date.now() - recoverPassword.expireAt >= 5 * 60 * 1000;
-      if (!isResendEmailCooldownExpired) {
-        res.json({
-          error: true,
-          message: "Resend email cooldown not expired",
-        });
-        return;
-      }
-      await RecoverPassword.deleteOne({ email: email });
+    if (!recoverPassword) {
+      res.json({
+        error: true,
+        message: "Verification not found",
+      });
+      return;
     }
-    await sendRecoverPasswordEmail(username, email);
+    const isResendEmailCooldownExpired =
+      Date.now() - recoverPassword.expireAt >= 5 * 60 * 1000;
+    if (!isResendEmailCooldownExpired) {
+      res.json({
+        error: true,
+        message: "Resend email cooldown not expired",
+      });
+      return;
+    }
+    await RecoverPassword.deleteOne({ email: email });
+    await sendRecoverPasswordEmail(email, username);
     res.json({
       success: true,
     });
@@ -570,6 +598,7 @@ export const checkAuthToken = async (req, res) => {
       avatar: avatarFile,
       username: user.username,
       email: user.email,
+      passwordLength: user.passwordLength,
       plan: user.plan,
       isAdmin: isAdmin(user),
       newAnnouncements: newAnnouncements,

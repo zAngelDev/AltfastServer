@@ -25,9 +25,8 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
-    passwordLenght: {
+    passwordLength: {
       type: Number,
-      required: true,
     },
     plan: {
       type: String,
@@ -59,7 +58,7 @@ UserSchema.pre("save", async function (next) {
   try {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(this.password, salt);
-    this.passwordLenght = this.password.length;
+    this.passwordLength = this.password.length;
     this.password = hashedPassword;
     next();
   } catch (error) {
@@ -74,7 +73,7 @@ UserSchema.pre(
       try {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(this._update.password, salt);
-        this.passwordLenght = this._update.password.length;
+        this._update.passwordLength = this._update.password.length;
         this._update.password = hashedPassword;
         next();
       } catch (error) {

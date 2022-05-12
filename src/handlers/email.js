@@ -1,5 +1,7 @@
 import Verification from "../models/Verification";
 import RecoverPassword from "../models/RecoverPassword";
+import EditEmailConfirm from "../models/EditEmailConfirm";
+import EditPasswordConfirm from "../models/EditPasswordConfirm";
 import nodemailer from "nodemailer";
 import randomize from "randomatic";
 
@@ -13,7 +15,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendVerificationEmail = async (username, email) => {
+export const sendVerificationEmail = async (email, username) => {
   const code = generateRandomCode();
   await new Verification({ email: email, code: code }).save();
   await transporter.sendMail({
@@ -24,7 +26,7 @@ export const sendVerificationEmail = async (username, email) => {
   });
 };
 
-export const sendRecoverPasswordEmail = async (username, email) => {
+export const sendRecoverPasswordEmail = async (email, username) => {
   const code = generateRandomCode();
   await new RecoverPassword({ email: email, code: code }).save();
   await transporter.sendMail({
@@ -32,6 +34,37 @@ export const sendRecoverPasswordEmail = async (username, email) => {
     to: email,
     subject: "Recover your password",
     html: getRecoverPasswordEmail(username, code),
+  });
+};
+
+export const sendEditEmailConfirmEmail = async (uuid, email, username) => {
+  const code = generateRandomCode();
+  await new EditEmailConfirm({ user: uuid, code: code, email: email }).save();
+  await transporter.sendMail({
+    from: "Altfast <info@altfast.net>",
+    to: email,
+    subject: "Confirm email change",
+    html: getEditEmailConfirmEmail(username, code),
+  });
+};
+
+export const sendEditPasswordConfirmEmail = async (
+  uuid,
+  email,
+  password,
+  username
+) => {
+  const code = generateRandomCode();
+  await new EditPasswordConfirm({
+    user: uuid,
+    code: code,
+    password: password,
+  }).save();
+  await transporter.sendMail({
+    from: "Altfast <info@altfast.net>",
+    to: email,
+    subject: "Confirm password change",
+    html: getEditPasswordConfirmEmail(username, code),
   });
 };
 
@@ -49,6 +82,24 @@ const getRecoverPasswordEmail = (username, code) => {
   <br>
   <br>
   Your recover code is <strong>${code}</strong> which will expire in 10 minutes
+  <br>
+  <i>Do not share this code with anyone!</i>`;
+};
+
+const getEditEmailConfirmEmail = (username, code) => {
+  return `Hi <strong>${username}</strong>, to confirm your email change you must verify that it is you
+  <br>
+  <br>
+  Your confirmation code is <strong>${code}</strong> which will expire in 10 minutes
+  <br>
+  <i>Do not share this code with anyone!</i>`;
+};
+
+const getEditPasswordConfirmEmail = (username, code) => {
+  return `Hi <strong>${username}</strong>, to confirm your password change you must verify that it is you
+  <br>
+  <br>
+  Your confirmation code is <strong>${code}</strong> which will expire in 10 minutes
   <br>
   <i>Do not share this code with anyone!</i>`;
 };
