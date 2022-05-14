@@ -1,60 +1,31 @@
 import { Router } from "express";
 import * as usersController from "../controllers/users";
-import passport from "passport";
 
 const usersRouter = Router();
 
-usersRouter.get(
-  "/getStats",
-  passport.authenticate("jwt", { session: false }),
-  usersController.getStats
-);
+usersRouter.get("/getStats", usersController.getStats);
 
-usersRouter.post(
-  "/getAnnouncements",
-  passport.authenticate("jwt", { session: false }),
-  usersController.getAnnouncements
-);
+usersRouter.post("/getAnnouncements", usersController.getAnnouncements);
 
-usersRouter.get(
-  "/getAnnouncement",
-  passport.authenticate("jwt", { session: false }),
-  usersController.getAnnouncement
-);
+usersRouter.get("/getAnnouncement", usersController.getAnnouncement);
 
-usersRouter.post(
-  "/logAnnouncementVisit",
-  passport.authenticate("jwt", { session: false }),
-  usersController.logAnnouncementVisit
-);
+usersRouter.post("/searchAnnouncements", usersController.searchAnnouncements);
 
-usersRouter.post(
-  "/editUser",
-  passport.authenticate("jwt", { session: false }),
-  usersController.editUser
-);
+usersRouter.post("/logAnnouncementVisit", usersController.logAnnouncementVisit);
 
-usersRouter.post(
-  "/confirmEditEmail",
-  passport.authenticate("jwt", { session: false }),
-  usersController.confirmEditEmail
-);
+usersRouter.post("/editUser", usersController.editUser);
 
-usersRouter.post(
-  "/confirmEditPassword",
-  passport.authenticate("jwt", { session: false }),
-  usersController.confirmEditPassword
-);
+usersRouter.post("/confirmEditEmail", usersController.confirmEditEmail);
+
+usersRouter.post("/confirmEditPassword", usersController.confirmEditPassword);
 
 usersRouter.post(
   "/resendConfirmEditEmailEmail",
-  passport.authenticate("jwt", { session: false }),
   usersController.resendConfirmEditEmailEmail
 );
 
 usersRouter.post(
   "/resendConfirmEditPasswordEmail",
-  passport.authenticate("jwt", { session: false }),
   usersController.resendConfirmEditPasswordEmail
 );
 

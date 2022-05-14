@@ -37,7 +37,6 @@ export const register = async (req, res) => {
     });
     const isEmailRepeated = await User.findOne({
       email: { $regex: `^${email}$`, $options: "i" },
-      verificated: true,
     });
     if (isUsernameRepeated && isEmailRepeated) {
       res.json({
@@ -100,8 +99,14 @@ export const login = async (req, res) => {
     return;
   }
   try {
-    const userByUsername = await User.findOne({ username: usernameOrEmail });
-    const userByEmail = await User.findOne({ email: usernameOrEmail });
+    const userByUsername = await User.findOne({
+      username: usernameOrEmail,
+      verificated: true,
+    });
+    const userByEmail = await User.findOne({
+      email: usernameOrEmail,
+      verificated: true,
+    });
     if (!userByUsername && !userByEmail) {
       res.json({
         error: true,
@@ -323,7 +328,7 @@ export const recoverPassword = async (req, res) => {
     return;
   }
   try {
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email: email, verificated: true });
     if (!user) {
       res.json({
         error: true,
@@ -374,7 +379,7 @@ export const changePassword = async (req, res) => {
     return;
   }
   try {
-    let user = await User.findOne({ email: email });
+    let user = await User.findOne({ email: email, verificated: true });
     if (!user) {
       res.json({
         error: true,
@@ -477,7 +482,7 @@ export const resendVerificationEmail = async (req, res) => {
     });
     return;
   }
-  const user = await User.findOne({ email: email });
+  const user = await User.findOne({ email: email, verificated: true });
   if (!user) {
     res.json({
       error: true,
@@ -568,7 +573,7 @@ export const checkAuthToken = async (req, res) => {
   }
   try {
     const { uuid, password } = jwt.verify(authToken, process.env.SECRET_KEY);
-    const user = await User.findOne({ uuid: uuid });
+    const user = await User.findOne({ uuid: uuid, verificated: true });
     if (!user) {
       res.json({
         error: true,

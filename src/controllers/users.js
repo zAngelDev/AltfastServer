@@ -343,13 +343,12 @@ export const getAnnouncements = async (req, res) => {
   }
   try {
     const skipResults = (page - 1) * 50;
-    let announcements = await Announcement.find()
-      .sort({ createdAt: -1 })
-      .skip(skipResults)
-      .limit(50);
-    announcements = announcements.map((announcement) =>
-      announcement.toObject()
-    );
+    const announcements = (
+      await Announcement.find()
+        .sort({ createdAt: -1 })
+        .skip(skipResults)
+        .limit(50)
+    ).map((announcement) => announcement.toObject());
     const formattedAnnouncements = announcements.map((announcement) => ({
       uuid: announcement.uuid,
       title: announcement.title,
@@ -408,6 +407,54 @@ export const getAnnouncement = async (req, res) => {
   }
 };
 
+export const searchAnnouncements = async (req, res) => {
+  const { search } = req.body;
+  if (!search) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  const isSearchValid = validator.isLength(search, { max: 100 });
+  if (!isSearchValid) {
+    res.json({
+      error: true,
+      message: "Invalid information",
+    });
+    return;
+  }
+  try {
+    let announcements = (await Announcement.find().sort({ createdAt: -1 })).map(
+      (announcement) => announcement.toObject()
+    );
+    const searchRegex = new RegExp(search, "i");
+    announcements = announcements.filter(
+      (announcement) =>
+        announcement.uuid.match(searchRegex) ||
+        announcement.title.match(searchRegex) ||
+        announcement.announcement.match(searchRegex)
+    );
+    const formattedAnnouncements = announcements.map((announcement) => ({
+      uuid: announcement.uuid,
+      title: announcement.title,
+      announcement: announcement.announcement,
+      views: announcement.views.length,
+      createdAt: announcement.createdAt,
+    }));
+    res.json({
+      success: true,
+      announcements: formattedAnnouncements,
+    });
+  } catch (error) {
+    res.json({
+      errror: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
 export const logAnnouncementVisit = async (req, res) => {
   const { uuid } = req.body;
   if (!uuid) {
@@ -441,7 +488,7 @@ export const logAnnouncementVisit = async (req, res) => {
 };
 
 export const editUser = async (req, res) => {
-  const { uuid, username, email, password } = req.body;
+  const { username, email, password } = req.body;
   const avatar = req.files?.avatar;
   if (!avatar && !username && !email && !password) {
     res.json({
@@ -497,7 +544,7 @@ export const editUser = async (req, res) => {
     }
   }
   try {
-    let user = uuid ? await User.findOne({ uuid: uuid }) : req.user;
+    const user = req.user;
     if (!user) {
       res.json({
         error: true,
@@ -514,7 +561,6 @@ export const editUser = async (req, res) => {
       email &&
       (await User.findOne({
         email: { $regex: `^${email}$`, $options: "i" },
-        verificated: true,
       }));
     if (isUsernameRepeated) {
       res.json({

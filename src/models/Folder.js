@@ -8,6 +8,10 @@ const FolderSchema = new Schema(
       default: uuid(),
       required: true,
     },
+    user: {
+      type: String,
+      required: true,
+    },
     name: {
       type: String,
       required: true,

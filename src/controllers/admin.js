@@ -6,18 +6,131 @@ import Report from "../models/Report";
 import Announcement from "../models/Announcement";
 import { io } from "../handlers/socket";
 import validator from "validator";
-import { isAdmin } from "../utils/utils";
+import fs from "fs";
 
-export const getStats = async (req, res) => {
-  const user = req.user;
-  const canAccess = isAdmin(user);
-  if (!canAccess) {
-    res.status(401).end();
+export const getUsers = async (req, res) => {
+  const { page } = req.body;
+  if (!page) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
     return;
   }
   try {
+    const skipResults = (page - 1) * 50;
+    const users = (
+      await User.find({ username: { $ne: "Admin" } })
+        .sort({ createdAt: -1 })
+        .skip(skipResults)
+        .limit(50)
+    ).map((user) => user.toObject());
+    const formattedUsers = await Promise.all(
+      users.map(async (user) => {
+        let avatarFile;
+        const avatarFileExists = fs.existsSync(
+          `media/users/avatars/${user.uuid}`
+        );
+        if (avatarFileExists) {
+          avatarFile = await fs.promises.readFile(
+            `media/users/avatars/${user.uuid}`
+          );
+        } else {
+          avatarFile = await fs.promises.readFile("media/utils/transparent");
+        }
+        const files =
+          (await File.count({ user: user.uuid })) +
+          (await Folder.count({ user: user.uuid }));
+        const links =
+          (await File.count({ user: user.uuid, link: true })) +
+          (await Folder.count({ user: user.uuid, link: true }));
+        const downloads = [
+          ...(await File.find({ user: user.uuid, link: true })),
+          ...(await Folder.find({ user: user.uuid, link: true })),
+        ].reduce(
+          (previousValue, currentValue) =>
+            previousValue + currentValue.downloads.length,
+          0
+        );
+        return {
+          uuid: user.uuid,
+          avatar: avatarFile,
+          username: user.username,
+          email: user.email,
+          files: files,
+          links: links,
+          downloads: downloads,
+          createdAt: user.createdAt,
+        };
+      })
+    );
+    res.json({
+      success: true,
+      users: formattedUsers,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const getUser = async (req, res) => {
+  const { uuid } = req.body;
+  if (!uuid) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const user = await User.findOne({ uuid: uuid, username: { $ne: "Admin" } });
+    if (!user) {
+      res.json({
+        error: true,
+        message: "User not found",
+      });
+      return;
+    }
+    let avatarFile;
+    const avatarFileExists = fs.existsSync(`media/users/avatars/${user.uuid}`);
+    if (avatarFileExists) {
+      avatarFile = await fs.promises.readFile(
+        `media/users/avatars/${user.uuid}`
+      );
+    } else {
+      avatarFile = await fs.promises.readFile("media/utils/transparent");
+    }
+    const formattedUser = {
+      uuid: user.uuid,
+      avatar: avatarFile,
+      username: user.username,
+      email: user.email,
+      roles: user.roles,
+    };
+    res.json({
+      success: true,
+      user: formattedUser,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const getStats = async (_, res) => {
+  try {
     const files = (await Folder.find()).concat(await File.find());
-    const users = await User.find();
+    const users = await User.find({
+      username: { $ne: "Admin" },
+      verificated: true,
+    });
     const payments = await Payment.find();
     const reports = await Report.find();
     const todayVisits = files
@@ -484,13 +597,263 @@ export const getStats = async (req, res) => {
   }
 };
 
-export const createAnnouncement = async (req, res) => {
-  const user = req.user;
-  const canAccess = isAdmin(user);
-  if (!canAccess) {
-    res.status(401).end();
+export const searchUsers = async (req, res) => {
+  const { search } = req.body;
+  if (!search) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
     return;
   }
+  const isSearchValid = validator.isLength(search, { max: 100 });
+  if (!isSearchValid) {
+    res.json({
+      error: true,
+      message: "Invalid information",
+    });
+    return;
+  }
+  try {
+    let users = (
+      await User.find({ useranem: { $ne: "Admin" } }).sort({
+        createdAt: -1,
+      })
+    ).map((user) => user.toObject());
+    const searchRegex = new RegExp(search, "i");
+    users = users.filter(
+      (user) =>
+        user.uuid.match(searchRegex) ||
+        user.username.match(searchRegex) ||
+        user.email.match(searchRegex)
+    );
+    const formattedUsers = await Promise.all(
+      users.map(async (user) => {
+        let avatarFile;
+        const avatarFileExists = fs.existsSync(
+          `media/users/avatars/${user.uuid}`
+        );
+        if (avatarFileExists) {
+          avatarFile = await fs.promises.readFile(
+            `media/users/avatars/${user.uuid}`
+          );
+        } else {
+          avatarFile = await fs.promises.readFile("media/utils/transparent");
+        }
+        const files =
+          (await File.find({ user: user.uuid })) +
+          (await Folder.find({ user: user.uuid }));
+        const links =
+          (await File.find({ user: user.uuid, link: true })) +
+          (await Folder.find({ user: user.uuid, link: true }));
+        const downloads = [
+          ...(await File.find({ user: user.uuid, link: true })),
+          ...(await Folder.find({ user: user.uuid, link: true })),
+        ].reduce(
+          (previousValue, currentValue) =>
+            previousValue + currentValue.downloads.length,
+          0
+        );
+        return {
+          uuid: user.uuid,
+          avatar: avatarFile,
+          username: user.username,
+          email: user.email,
+          files: files,
+          links: links,
+          downloads: downloads,
+          createdAt: user.createdAt,
+        };
+      })
+    );
+    res.json({
+      success: true,
+      users: formattedUsers,
+    });
+  } catch (error) {
+    res.json({
+      errror: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const editUser = async (req, res) => {
+  const { uuid, username, email, password } = req.body;
+  let { roles } = req.body;
+  if (roles) {
+    roles = roles.split(",").filter((role) => role);
+  }
+  const avatar = req.files?.avatar;
+  if (!uuid && !avatar && !username && !email && !password && !roles) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  if (avatar) {
+    const isAvatarValid =
+      (avatar.mimetype === "image/jpeg" ||
+        avatar.mimetype === "image/jpg" ||
+        avatar.mimetype === "image/png" ||
+        avatar.mimetype === "image/webp" ||
+        avatar.mimetype === "image/gif") &&
+      avatar.size / 1024 / 1024 <= 10;
+    if (!isAvatarValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  if (username) {
+    const isUsernameValid = validator.isLength(username, { min: 4, max: 16 });
+    if (!isUsernameValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  if (email) {
+    const isEmailValid = validator.isEmail(email);
+    if (!isEmailValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  if (password) {
+    const isPasswordValid = validator.isLength(password, { min: 6, max: 50 });
+    if (!isPasswordValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  if (roles) {
+    const isRolesValid =
+      Array.isArray(roles) &&
+      roles.length !== 0 &&
+      roles.every(
+        (role) => role === "USER" || role === "STAFF" || role === "ADMIN"
+      );
+    if (!isRolesValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  try {
+    const user = await User.findOne({
+      uuid: uuid,
+      username: { $ne: "Admin" },
+      verificated: true,
+    });
+    if (!user) {
+      res.json({
+        error: true,
+        message: "User not found",
+      });
+      return;
+    }
+    const isUsernameRepeated =
+      username &&
+      (await User.findOne({
+        username: { $regex: `^${username}$`, $options: "i" },
+      }));
+    const isEmailRepeated =
+      email &&
+      (await User.findOne({
+        email: { $regex: `^${email}$`, $options: "i" },
+      }));
+    if (isUsernameRepeated) {
+      res.json({
+        error: true,
+        message: "Repeated username",
+      });
+      return;
+    }
+    if (isEmailRepeated) {
+      res.json({
+        error: true,
+        message: "Repeated email",
+      });
+      return;
+    }
+    if (isUsernameRepeated && isEmailRepeated) {
+      res.json({
+        error: true,
+        message: "Repeated information",
+      });
+      return;
+    }
+    if (avatar) {
+      await avatar.mv(`media/users/avatars/${user.uuid}`);
+    }
+    await User.updateOne(
+      { uuid: user.uuid },
+      {
+        ...(username && { username: username }),
+        ...(email && { email: email }),
+        ...(password && { password: password }),
+        ...(roles && { roles: roles }),
+      }
+    );
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  const { uuid } = req.body;
+  if (!uuid) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const userExists = await User.findOne({ uuid: uuid });
+    if (!userExists) {
+      res.json({
+        error: true,
+        message: "User not found",
+      });
+      return;
+    }
+    await User.deleteOne({ uuid: uuid });
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const createAnnouncement = async (req, res) => {
   const { title, announcement } = req.body;
   if (!title || !announcement) {
     res.json({
@@ -543,12 +906,6 @@ export const createAnnouncement = async (req, res) => {
 };
 
 export const editAnnouncement = async (req, res) => {
-  const user = req.user;
-  const canAccess = isAdmin(user);
-  if (!canAccess) {
-    res.status(401).end();
-    return;
-  }
   const { uuid, title, announcement } = req.body;
   if (!uuid || (!title && !announcement)) {
     res.json({
@@ -608,12 +965,6 @@ export const editAnnouncement = async (req, res) => {
 };
 
 export const deleteAnnouncement = async (req, res) => {
-  const user = req.user;
-  const canAccess = isAdmin(user);
-  if (!canAccess) {
-    res.status(401).end();
-    return;
-  }
   const { uuid } = req.body;
   if (!uuid) {
     res.json({

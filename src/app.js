@@ -7,6 +7,7 @@ import authRoute from "./routes/auth";
 import usersRoute from "./routes/users";
 import filesRoute from "./routes/files";
 import adminRoute from "./routes/admin";
+import checkAdmin from "./middlewares/checkAdmin";
 
 const app = express();
 
@@ -27,10 +28,10 @@ app.use(passport.initialize());
 
 app.use("/auth", authRoute);
 
-app.use("/users", usersRoute);
+app.use("/users", passport.authenticate("jwt", { session: false }), usersRoute);
 
-app.use("/files", filesRoute);
+app.use("/files", passport.authenticate("jwt", { session: false }), filesRoute);
 
-app.use("/admin", adminRoute);
+app.use("/admin", passport.authenticate("jwt", { session: false }), adminRoute);
 
 export default app;

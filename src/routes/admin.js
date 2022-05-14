@@ -1,31 +1,24 @@
 import { Router } from "express";
 import * as adminController from "../controllers/admin";
-import passport from "passport";
 
 const adminRouter = Router();
 
-adminRouter.get(
-  "/getStats",
-  passport.authenticate("jwt", { session: false }),
-  adminController.getStats
-);
+adminRouter.post("/getUsers", adminController.getUsers);
 
-adminRouter.post(
-  "/createAnnouncement",
-  passport.authenticate("jwt", { session: false }),
-  adminController.createAnnouncement
-);
+adminRouter.post("/getUser", adminController.getUser);
 
-adminRouter.post(
-  "/editAnnouncement",
-  passport.authenticate("jwt", { session: false }),
-  adminController.editAnnouncement
-);
+adminRouter.get("/getStats", adminController.getStats);
 
-adminRouter.post(
-  "/deleteAnnouncement",
-  passport.authenticate("jwt", { session: false }),
-  adminController.deleteAnnouncement
-);
+adminRouter.post("/searchUsers", adminController.searchUsers);
+
+adminRouter.post("/editUser", adminController.editUser);
+
+adminRouter.post("/deleteUser", adminController.deleteUser);
+
+adminRouter.post("/createAnnouncement", adminController.createAnnouncement);
+
+adminRouter.post("/editAnnouncement", adminController.editAnnouncement);
+
+adminRouter.post("/deleteAnnouncement", adminController.deleteAnnouncement);
 
 export default adminRouter;

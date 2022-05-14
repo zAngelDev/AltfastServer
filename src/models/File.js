@@ -8,6 +8,10 @@ const FileSchema = new Schema(
       default: uuid(),
       required: true,
     },
+    user: {
+      type: String,
+      required: true,
+    },
     name: {
       type: String,
       required: true,
