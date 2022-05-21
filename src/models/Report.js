@@ -5,8 +5,7 @@ const ReportSchema = new Schema(
   {
     uuid: {
       type: String,
-      default: uuid(),
-      required: true,
+      default: uuid,
     },
     file: {
       type: String,
@@ -19,7 +18,6 @@ const ReportSchema = new Schema(
     status: {
       type: String,
       default: "PENDING",
-      required: true,
     },
   },
   {

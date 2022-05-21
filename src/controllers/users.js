@@ -4,12 +4,122 @@ import File from "../models/File";
 import Announcement from "../models/Announcement";
 import EditEmailConfirm from "../models/EditEmailConfirm";
 import EditPasswordConfirm from "../models/EditPasswordConfirm";
+import Payment from "../models/Payment";
 import {
   sendEditEmailConfirmEmail,
   sendEditPasswordConfirmEmail,
 } from "../handlers/email";
 import jwt from "jsonwebtoken";
 import validator from "validator";
+
+export const getAnnouncements = async (req, res) => {
+  const { page } = req.body;
+  if (!page) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const skipResults = (page - 1) * 50;
+    const announcements = (
+      await Announcement.find()
+        .sort({ createdAt: -1 })
+        .skip(skipResults)
+        .limit(50)
+    ).map((announcement) => announcement.toObject());
+    const formattedAnnouncements = announcements.map((announcement) => ({
+      uuid: announcement.uuid,
+      title: announcement.title,
+      announcement: announcement.announcement,
+      views: announcement.views.length,
+      createdAt: announcement.createdAt,
+    }));
+    res.json({
+      success: true,
+      announcements: formattedAnnouncements,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const getAnnouncement = async (req, res) => {
+  const { uuid } = req.body;
+  if (!uuid) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const announcement = await Announcement.findOne({ uuid: uuid });
+    if (!announcement) {
+      res.json({
+        error: true,
+        message: "Announcement not found",
+      });
+      return;
+    }
+    const formattedAnnouncement = {
+      uuid: announcement.uuid,
+      title: announcement.title,
+      announcement: announcement.announcement,
+      views: announcement.views.length,
+      createdAt: announcement.createdAt,
+    };
+    res.json({
+      success: true,
+      announcement: formattedAnnouncement,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const getPayments = async (req, res) => {
+  const { page } = req.body;
+  if (!page) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const skipResults = (page - 1) * 50;
+    const payments = (
+      await Payment.find().sort({ createdAt: -1 }).skip(skipResults).limit(50)
+    ).map((payment) => payment.toObject());
+    const formattedPayments = payments.map((payment) => ({
+      id: payment.id,
+      amount: payment.amount,
+      method: payment.method,
+      status: payment.status,
+      createdAt: payment.createdAt,
+    }));
+    res.json({
+      success: true,
+      payments: formattedPayments,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
 
 export const getStats = async (req, res) => {
   const user = req.user;
@@ -322,81 +432,6 @@ export const getStats = async (req, res) => {
           lastMonthDownloadsGrowing: lastMonthDownloadsGrowing,
         },
       },
-    });
-  } catch (error) {
-    res.json({
-      error: true,
-      message: error,
-    });
-    console.log(error);
-  }
-};
-
-export const getAnnouncements = async (req, res) => {
-  const { page } = req.body;
-  if (!page) {
-    res.json({
-      error: true,
-      message: "Insufficient information",
-    });
-    return;
-  }
-  try {
-    const skipResults = (page - 1) * 50;
-    const announcements = (
-      await Announcement.find()
-        .sort({ createdAt: -1 })
-        .skip(skipResults)
-        .limit(50)
-    ).map((announcement) => announcement.toObject());
-    const formattedAnnouncements = announcements.map((announcement) => ({
-      uuid: announcement.uuid,
-      title: announcement.title,
-      announcement: announcement.announcement,
-      views: announcement.views.length,
-      createdAt: announcement.createdAt,
-    }));
-    res.json({
-      success: true,
-      announcements: formattedAnnouncements,
-    });
-  } catch (error) {
-    res.json({
-      error: true,
-      message: error,
-    });
-    console.log(error);
-  }
-};
-
-export const getAnnouncement = async (req, res) => {
-  const { uuid } = req.body;
-  if (!uuid) {
-    res.json({
-      error: true,
-      message: "Insufficient information",
-    });
-    return;
-  }
-  try {
-    const announcement = await Announcement.findOne({ uuid: uuid });
-    if (!announcement) {
-      res.json({
-        error: true,
-        message: "Announcement not found",
-      });
-      return;
-    }
-    const formattedAnnouncement = {
-      uuid: announcement.uuid,
-      title: announcement.title,
-      announcement: announcement.announcement,
-      views: announcement.views.length,
-      createdAt: announcement.createdAt,
-    };
-    res.json({
-      success: true,
-      announcement: formattedAnnouncement,
     });
   } catch (error) {
     res.json({
@@ -804,6 +839,89 @@ export const resendConfirmEditPasswordEmail = async (req, res) => {
       user.email,
       editPasswordConfirmation.password,
       user.username
+    );
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const requestPayment = async (req, res) => {
+  const { amount, method } = req.body;
+  if (!amount || !method) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  const user = req.user;
+  const isAmountValid = amount >= 1;
+  const isMethodValid = method === "PAYPAL";
+  if (!isAmountValid || !isMethodValid) {
+    res.json({
+      error: true,
+      message: "Invalid information",
+    });
+    return;
+  }
+  const canAffordAmount = amount <= user.balance;
+  if (!canAffordAmount) {
+    res.json({
+      error: true,
+      message: "Insufficient balance",
+    });
+    return;
+  }
+  try {
+    await User.updateOne({ uuid: user.uuid }, { $inc: { balance: -amount } });
+    await new Payment({
+      user: user.uuid,
+      amount: amount,
+      method: method,
+    }).save();
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const updatePaymentMethods = async (req, res) => {
+  const { paypal } = req.body;
+  if (!paypal) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  if (paypal) {
+    const isPayPalValid = validator.isEmail(paypal);
+    if (!isPayPalValid) {
+      res.json({
+        error: true,
+        message: "Invalid information",
+      });
+      return;
+    }
+  }
+  try {
+    const user = req.user.uuid;
+    await User.updateOne(
+      { uuid: user },
+      { ...(paypal && { "paymentMethods.paypal": paypal }) }
     );
     res.json({
       success: true,

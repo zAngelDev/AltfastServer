@@ -15,7 +15,6 @@ const ChangePasswordSchema = new Schema(
       type: Date,
       default: Date.now,
       index: { expires: "1d" },
-      required: true,
     },
   },
   {

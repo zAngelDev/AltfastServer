@@ -7,7 +7,6 @@ import authRoute from "./routes/auth";
 import usersRoute from "./routes/users";
 import filesRoute from "./routes/files";
 import adminRoute from "./routes/admin";
-import checkAdmin from "./middlewares/checkAdmin";
 
 const app = express();
 

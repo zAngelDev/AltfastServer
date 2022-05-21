@@ -1,12 +1,11 @@
 import { Schema, model } from "mongoose";
-import { v4 as uuid } from "uuid";
+import { generateRandomId } from "../utils/utils";
 
 const PaymentSchema = new Schema(
   {
-    uuid: {
+    id: {
       type: String,
-      default: uuid(),
-      required: true,
+      default: () => generateRandomId(15),
     },
     user: {
       type: String,
@@ -23,7 +22,6 @@ const PaymentSchema = new Schema(
     status: {
       type: String,
       default: "PENDING",
-      required: true,
     },
   },
   {

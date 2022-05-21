@@ -3,11 +3,13 @@ import * as usersController from "../controllers/users";
 
 const usersRouter = Router();
 
-usersRouter.get("/getStats", usersController.getStats);
-
 usersRouter.post("/getAnnouncements", usersController.getAnnouncements);
 
-usersRouter.get("/getAnnouncement", usersController.getAnnouncement);
+usersRouter.post("/getAnnouncement", usersController.getAnnouncement);
+
+usersRouter.post("/getPayments", usersController.getPayments);
+
+usersRouter.get("/getStats", usersController.getStats);
 
 usersRouter.post("/searchAnnouncements", usersController.searchAnnouncements);
 
@@ -28,5 +30,9 @@ usersRouter.post(
   "/resendConfirmEditPasswordEmail",
   usersController.resendConfirmEditPasswordEmail
 );
+
+usersRouter.post("/requestPayment", usersController.requestPayment);
+
+usersRouter.post("/updatePaymentMethods", usersController.updatePaymentMethods);
 
 export default usersRouter;

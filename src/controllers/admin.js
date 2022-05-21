@@ -597,6 +597,46 @@ export const getStats = async (_, res) => {
   }
 };
 
+export const getPayments = async (req, res) => {
+  const { page } = req.body;
+  if (!page) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const skipResults = (page - 1) * 50;
+    const payments = (
+      await Payment.find().sort({ createdAt: -1 }).skip(skipResults).limit(50)
+    ).map((payment) => payment.toObject());
+    const formattedPayments = await Promise.all(
+      payments.map(async (payment) => {
+        const user = await User.findOne({ uuid: payment.user });
+        return {
+          id: payment.id,
+          username: user ? user.username : "Deleted user",
+          amount: payment.amount,
+          method: payment.method,
+          status: payment.status,
+          createdAt: payment.createdAt,
+        };
+      })
+    );
+    res.json({
+      success: true,
+      payments: formattedPayments,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
 export const searchUsers = async (req, res) => {
   const { search } = req.body;
   if (!search) {
@@ -983,6 +1023,68 @@ export const deleteAnnouncement = async (req, res) => {
       return;
     }
     await Announcement.deleteOne({ uuid: uuid });
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const completePayment = async (req, res) => {
+  const { id } = req.body;
+  if (!id) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const paymentExists = await Payment.findOne({ id: id });
+    if (!paymentExists) {
+      res.json({
+        error: true,
+        message: "Payment not found",
+      });
+      return;
+    }
+    await Payment.updateOne({ id: id }, { status: "COMPLETE" });
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error,
+    });
+    console.log(error);
+  }
+};
+
+export const deletePayment = async (req, res) => {
+  const { id } = req.body;
+  if (!id) {
+    res.json({
+      error: true,
+      message: "Insufficient information",
+    });
+    return;
+  }
+  try {
+    const paymentExists = await Payment.findOne({ id: id });
+    if (!paymentExists) {
+      res.json({
+        error: true,
+        message: "Payment not found",
+      });
+      return;
+    }
+    await Payment.deleteOne({ id: id });
     res.json({
       success: true,
     });

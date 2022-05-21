@@ -160,6 +160,8 @@ export const login = async (req, res) => {
       passwordLength: user.passwordLength,
       plan: user.plan,
       isAdmin: isAdmin(user),
+      balance: user.balance,
+      paymentMethods: user.paymentMethods,
       newAnnouncements: newAnnouncements,
     };
     const payload = {
@@ -265,6 +267,8 @@ export const verificate = async (req, res) => {
         passwordLength: user.passwordLength,
         plan: user.plan,
         isAdmin: isAdmin(user),
+        balance: user.balance,
+        paymentMethods: user.paymentMethods,
         newAnnouncements: newAnnouncements,
       };
       const payload = {
@@ -436,6 +440,8 @@ export const changePassword = async (req, res) => {
       passwordLength: user.passwordLength,
       plan: user.plan,
       isAdmin: isAdmin(user),
+      balance: user.balance,
+      paymentMethods: user.paymentMethods,
       newAnnouncements: newAnnouncements,
     };
     const payload = {
@@ -606,6 +612,8 @@ export const checkAuthToken = async (req, res) => {
       passwordLength: user.passwordLength,
       plan: user.plan,
       isAdmin: isAdmin(user),
+      balance: user.balance,
+      paymentMethods: user.paymentMethods,
       newAnnouncements: newAnnouncements,
     };
     res.json({

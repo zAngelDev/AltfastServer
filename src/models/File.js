@@ -5,8 +5,7 @@ const FileSchema = new Schema(
   {
     uuid: {
       type: String,
-      default: uuid(),
-      required: true,
+      default: uuid,
     },
     user: {
       type: String,
@@ -27,17 +26,14 @@ const FileSchema = new Schema(
     visits: {
       type: Array,
       default: [],
-      required: true,
     },
     downloads: {
       type: Array,
       default: [],
-      required: true,
     },
     link: {
       type: Boolean,
       default: false,
-      required: true,
     },
   },
   {

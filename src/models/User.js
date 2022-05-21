@@ -6,8 +6,7 @@ const UserSchema = new Schema(
   {
     uuid: {
       type: String,
-      default: uuid(),
-      required: true,
+      default: uuid,
     },
     username: {
       type: String,
@@ -31,12 +30,18 @@ const UserSchema = new Schema(
     plan: {
       type: String,
       default: "BASIC",
-      required: true,
     },
     roles: {
       type: [String],
       default: ["USER"],
-      required: true,
+    },
+    balance: {
+      type: Number,
+      default: 0,
+    },
+    paymentMethods: {
+      type: Object,
+      default: {},
     },
     files: {
       type: Array,
@@ -45,7 +50,6 @@ const UserSchema = new Schema(
     verificated: {
       type: Boolean,
       default: false,
-      required: true,
     },
   },
   {

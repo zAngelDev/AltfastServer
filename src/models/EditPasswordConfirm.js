@@ -19,7 +19,6 @@ const EditPasswordConfirmSchema = new Schema(
       type: Date,
       default: Date.now,
       index: { expires: "10m" },
-      required: true,
     },
   },
   {

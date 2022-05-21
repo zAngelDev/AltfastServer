@@ -5,8 +5,7 @@ const AnnouncementSchema = new Schema(
   {
     uuid: {
       type: String,
-      default: uuid(),
-      required: true,
+      default: uuid,
     },
     title: {
       type: String,
@@ -19,7 +18,6 @@ const AnnouncementSchema = new Schema(
     visits: {
       type: Array,
       default: [],
-      required: true,
     },
   },
   {
