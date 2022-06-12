@@ -500,7 +500,11 @@ export const logAnnouncementVisit = async (req, res) => {
     return;
   }
   try {
-    const announcementExists = await Announcement.findOne({ uuid: uuid });
+    const user = req.user.uuid;
+    const announcementExists = await Announcement.findOneAndUpdate(
+      { uuid: uuid },
+      { $push: { views: user } }
+    );
     if (!announcementExists) {
       res.json({
         error: true,
@@ -508,8 +512,6 @@ export const logAnnouncementVisit = async (req, res) => {
       });
       return;
     }
-    const user = req.user.uuid;
-    await Announcement.updateOne({ uuid: uuid }, { $push: { views: user } });
     res.json({
       success: true,
     });
@@ -625,12 +627,7 @@ export const editUser = async (req, res) => {
       await User.updateOne({ uuid: user.uuid }, { username: username });
     }
     if (email) {
-      const isEditEmailConfirming = await EditEmailConfirm.findOne({
-        user: user.uuid,
-      });
-      if (isEditEmailConfirming) {
-        await EditEmailConfirm.deleteOne({ user: user.uuid });
-      }
+      await EditEmailConfirm.findOneAndDelete({ user: user.uuid });
       await sendEditEmailConfirmEmail(user.uuid, email, user.username);
       res.json({
         success: true,
@@ -638,12 +635,7 @@ export const editUser = async (req, res) => {
       return;
     }
     if (password) {
-      const isEditPasswordConfirming = await EditPasswordConfirm.findOne({
-        user: user.uuid,
-      });
-      if (isEditPasswordConfirming) {
-        await EditPasswordConfirm.deleteOne({ user: user.uuid });
-      }
+      await EditPasswordConfirm.findOneAndDelete({ user: user.uuid });
       await sendEditPasswordConfirmEmail(
         user.uuid,
         user.email,

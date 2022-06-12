@@ -656,7 +656,7 @@ export const searchUsers = async (req, res) => {
   }
   try {
     let users = (
-      await User.find({ useranem: { $ne: "Admin" } }).sort({
+      await User.find({ username: { $ne: "Admin" } }).sort({
         createdAt: -1,
       })
     ).map((user) => user.toObject());
@@ -681,11 +681,11 @@ export const searchUsers = async (req, res) => {
           avatarFile = await fs.promises.readFile("media/utils/transparent");
         }
         const files =
-          (await File.find({ user: user.uuid })) +
-          (await Folder.find({ user: user.uuid }));
+          (await File.count({ user: user.uuid })) +
+          (await Folder.count({ user: user.uuid }));
         const links =
-          (await File.find({ user: user.uuid, link: true })) +
-          (await Folder.find({ user: user.uuid, link: true }));
+          (await File.count({ user: user.uuid, link: true })) +
+          (await Folder.count({ user: user.uuid, link: true }));
         const downloads = [
           ...(await File.find({ user: user.uuid, link: true })),
           ...(await Folder.find({ user: user.uuid, link: true })),
@@ -872,7 +872,7 @@ export const deleteUser = async (req, res) => {
     return;
   }
   try {
-    const userExists = await User.findOne({ uuid: uuid });
+    const userExists = await User.findOneAndDelete({ uuid: uuid });
     if (!userExists) {
       res.json({
         error: true,
@@ -880,7 +880,6 @@ export const deleteUser = async (req, res) => {
       });
       return;
     }
-    await User.deleteOne({ uuid: uuid });
     res.json({
       success: true,
     });
@@ -1014,7 +1013,9 @@ export const deleteAnnouncement = async (req, res) => {
     return;
   }
   try {
-    const announcementExists = await Announcement.findOne({ uuid: uuid });
+    const announcementExists = await Announcement.findOneAndDelete({
+      uuid: uuid,
+    });
     if (!announcementExists) {
       res.json({
         error: true,
@@ -1022,7 +1023,6 @@ export const deleteAnnouncement = async (req, res) => {
       });
       return;
     }
-    await Announcement.deleteOne({ uuid: uuid });
     res.json({
       success: true,
     });
@@ -1045,7 +1045,10 @@ export const completePayment = async (req, res) => {
     return;
   }
   try {
-    const paymentExists = await Payment.findOne({ id: id });
+    const paymentExists = await Payment.findOneAndUpdate(
+      { id: id },
+      { status: "COMPLETE" }
+    );
     if (!paymentExists) {
       res.json({
         error: true,
@@ -1053,7 +1056,6 @@ export const completePayment = async (req, res) => {
       });
       return;
     }
-    await Payment.updateOne({ id: id }, { status: "COMPLETE" });
     res.json({
       success: true,
     });
@@ -1076,7 +1078,7 @@ export const deletePayment = async (req, res) => {
     return;
   }
   try {
-    const paymentExists = await Payment.findOne({ id: id });
+    const paymentExists = await Payment.findOneAndDelete({ id: id });
     if (!paymentExists) {
       res.json({
         error: true,
@@ -1084,7 +1086,6 @@ export const deletePayment = async (req, res) => {
       });
       return;
     }
-    await Payment.deleteOne({ id: id });
     res.json({
       success: true,
     });

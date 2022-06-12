@@ -59,23 +59,15 @@ export const register = async (req, res) => {
       });
       return;
     }
-    const nonVerificatedUser = await User.findOne({
+    await User.findOneAndDelete({
       email: { $regex: `^${email}$`, $options: "i" },
     });
-    if (nonVerificatedUser) {
-      await User.deleteOne(nonVerificatedUser);
-    }
     await new User({
       username: username,
       email: email,
       password: password,
     }).save();
-    const isVerificationCodeActive = await Verification.findOne({
-      email: email,
-    });
-    if (isVerificationCodeActive) {
-      await Verification.deleteOne({ email: email });
-    }
+    await Verification.findOneAndDelete({ email: email });
     await sendVerificationEmail(email, username);
     res.json({
       success: true,
@@ -126,12 +118,7 @@ export const login = async (req, res) => {
     const isUserVerificating = !user.verificated;
     if (isUserVerificating) {
       const email = user.email;
-      const isVerificationCodeActive = await Verification.findOne({
-        email: email,
-      });
-      if (isVerificationCodeActive) {
-        await Verification.deleteOne({ email: email });
-      }
+      await Verification.findOneAndDelete({ email: email });
       await sendVerificationEmail(user.email, user.username);
       res.json({
         error: true,
@@ -340,18 +327,8 @@ export const recoverPassword = async (req, res) => {
       });
       return;
     }
-    const isUserChangingPassword = await ChangePassword.findOne({
-      email: email,
-    });
-    if (isUserChangingPassword) {
-      await ChangePassword.deleteOne({ email: email });
-    }
-    const isUserRecoveringPassword = await RecoverPassword.findOne({
-      email: email,
-    });
-    if (isUserRecoveringPassword) {
-      await RecoverPassword.deleteOne({ email: email });
-    }
+    await ChangePassword.findOneAndDelete({ email: email });
+    await RecoverPassword.findOneAndDelete({ email: email });
     await sendRecoverPasswordEmail(email, user.username);
     res.json({
       success: true,

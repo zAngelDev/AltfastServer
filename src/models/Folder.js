@@ -5,7 +5,10 @@ const FolderSchema = new Schema(
   {
     uuid: {
       type: String,
-      default: uuid,
+      default: () => uuid().replaceAll("-", ""),
+    },
+    parent: {
+      type: String,
     },
     user: {
       type: String,
@@ -17,7 +20,7 @@ const FolderSchema = new Schema(
     },
     clasification: {
       type: String,
-      required: true,
+      default: "NONE",
     },
     visits: {
       type: Array,
@@ -30,6 +33,14 @@ const FolderSchema = new Schema(
     link: {
       type: Boolean,
       default: false,
+    },
+    trash: {
+      type: Boolean,
+      default: false,
+    },
+    lastModified: {
+      type: Date,
+      default: Date.now,
     },
   },
   {

@@ -5,7 +5,10 @@ const FileSchema = new Schema(
   {
     uuid: {
       type: String,
-      default: uuid,
+      default: () => uuid().replaceAll("-", ""),
+    },
+    folder: {
+      type: String,
     },
     user: {
       type: String,
@@ -34,6 +37,14 @@ const FileSchema = new Schema(
     link: {
       type: Boolean,
       default: false,
+    },
+    trash: {
+      type: Boolean,
+      default: false,
+    },
+    lastModified: {
+      type: Date,
+      default: Date.now,
     },
   },
   {
